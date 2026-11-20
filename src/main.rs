@@ -7,7 +7,7 @@ async fn main() {
     let mut size = vec2(32.0, 32.0);
     let mut velocity = vec2(0.0, 0.0);
     let mut on_ground = false;
-
+    let mut score = 0;
     // Параметры физики
     let mut speed = 250.0;
     let mut gravity = 900.0;
@@ -19,7 +19,8 @@ async fn main() {
         Rect::new(600.0, 400.0, 400.0, 200.0),
     ];
 
-    //let platform = Rect::new(600.0, 400.0, 200.0, 200.0);
+    //Кнопка
+    let button_rect = Rect::new(150.0, 100.0, 100.0, 100.0);
 
     // Особенности
     let mut d_jump_count = 0;
@@ -41,6 +42,11 @@ async fn main() {
                 velocity.y = jump_force;
                 d_jump_count -= 1;
             }
+        }
+        let mouse_pos: Vec2 = mouse_position().into();
+        let it_on = button_rect.contains(mouse_pos);
+        if it_on && is_mouse_button_pressed(MouseButton::Left) {
+            score += 1;
         }
         let old_pos = pos;
         velocity.y += gravity * dt; // гравитация
@@ -73,6 +79,14 @@ async fn main() {
         for floor in &floors {
             draw_rectangle(floor.x, floor.y, floor.w, floor.h, BROWN);
         }
+        draw_rectangle(
+            button_rect.x,
+            button_rect.y,
+            button_rect.w,
+            button_rect.h,
+            RED,
+        );
+        draw_text(&format!("Score: {score}"), 50.0, 50.0, 32.0, WHITE);
         next_frame().await
     }
 }
