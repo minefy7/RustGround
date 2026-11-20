@@ -14,7 +14,10 @@ async fn main() {
     let mut jump_force = -420.0;
 
     // Пол (плейсхолдер), x, y, ширина, высота
-    let floor = Rect::new(0.0, 400.0, 400.0, 200.0);
+    let floors = vec![
+        Rect::new(0.0, 400.0, 400.0, 200.0),
+        Rect::new(600.0, 400.0, 400.0, 200.0),
+    ];
 
     //let platform = Rect::new(600.0, 400.0, 200.0, 200.0);
 
@@ -46,28 +49,31 @@ async fn main() {
         let player_rect = Rect::new(pos.x, pos.y, size.x, size.y);
 
         // Коллизия
-
-        if player_rect.overlaps(&floor) {
-            if old_pos.y + size.y <= floor.y && velocity.y >= 0.0 {
-                pos.y = floor.y - size.y;
-                velocity.y = 0.0;
-                on_ground = true;
-                d_jump_count = 1;
-            } else {
-                if old_pos.x + size.x / 2.0 >= floor.x + floor.w / 2.0 {
-                    pos.x = floor.x + floor.w;
+        for floor in &floors {
+            if player_rect.overlaps(&floor) {
+                if old_pos.y + size.y <= floor.y && velocity.y >= 0.0 {
+                    pos.y = floor.y - size.y;
+                    velocity.y = 0.0;
+                    on_ground = true;
+                    d_jump_count = 1;
                 } else {
-                    pos.x = floor.x - size.x;
+                    if old_pos.x + size.x / 2.0 >= floor.x + floor.w / 2.0 {
+                        pos.x = floor.x + floor.w;
+                    } else {
+                        pos.x = floor.x - size.x;
+                    }
                 }
+            } else {
+                on_ground = false;
             }
-        } else {
-            on_ground = false;
         }
+
         // Отрисовка
         clear_background(Color::from_rgba(25, 25, 30, 255)); // r g b and trancperensy
-        draw_rectangle(floor.x, floor.y, floor.w, floor.h, BROWN);
         draw_rectangle(pos.x, pos.y, size.x, size.y, SKYBLUE);
         //draw_rectangle(platform.x, platform.y, platform.w, platform.h, BROWN);
+        draw_rectangle(floors[1].x, floors[1].y, floors[1].w, floors[1].h, BROWN);
+        draw_rectangle(floors[0].x, floors[0].y, floors[0].w, floors[0].h, BROWN);
         next_frame().await
     }
 }
