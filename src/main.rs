@@ -47,7 +47,7 @@ async fn main() {
         pos += velocity * dt; // движение
         // Персонаж
         let player_rect = Rect::new(pos.x, pos.y, size.x, size.y);
-
+        on_ground = false;
         // Коллизия
         for floor in &floors {
             if player_rect.overlaps(&floor) {
@@ -63,8 +63,6 @@ async fn main() {
                         pos.x = floor.x - size.x;
                     }
                 }
-            } else {
-                on_ground = false;
             }
         }
 
@@ -72,8 +70,9 @@ async fn main() {
         clear_background(Color::from_rgba(25, 25, 30, 255)); // r g b and trancperensy
         draw_rectangle(pos.x, pos.y, size.x, size.y, SKYBLUE);
         //draw_rectangle(platform.x, platform.y, platform.w, platform.h, BROWN);
-        draw_rectangle(floors[1].x, floors[1].y, floors[1].w, floors[1].h, BROWN);
-        draw_rectangle(floors[0].x, floors[0].y, floors[0].w, floors[0].h, BROWN);
+        for floor in &floors {
+            draw_rectangle(floor.x, floor.y, floor.w, floor.h, BROWN);
+        }
         next_frame().await
     }
 }
