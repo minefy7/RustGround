@@ -28,11 +28,11 @@ async fn main() {
     // Пол (плейсхолдер), x, y, ширина, высота
     let blocks = vec![
         Blocks {
-            rect: Rect::new(0.0, 400.0, 400.0, 200.0),
+            rect: Rect::new(0.0, 400.0, 400.0, 600.0),
             color: BROWN,
         },
         Blocks {
-            rect: Rect::new(600.0, 400.0, 600.0, 200.0),
+            rect: Rect::new(600.0, 400.0, 800.0, 600.0),
             color: BROWN,
         },
         Blocks {
@@ -118,8 +118,8 @@ async fn main() {
         //   верхний край = pos.y - половина высоты экрана
         // Размер окна = размеру экрана, т.е. масштаб 1:1, без зума.
         let camera = Camera2D::from_display_rect(Rect::new(
-            pos.x - screen_width() / 2.0,
-            pos.y + screen_height() / 2.0,
+            pos.x - screen_width() / 4.0,
+            pos.y + screen_height() / 4.0,
             screen_width(),
             -screen_height(),
         ));
