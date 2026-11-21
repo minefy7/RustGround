@@ -1,4 +1,7 @@
 use macroquad::prelude::*;
+// Camera2D — встроенная 2D-камера macroquad.
+// set_camera включает её, set_default_camera выключает (вернуть обычные экранные координаты).
+use macroquad::camera::{Camera2D, set_camera, set_default_camera};
 
 struct Blocks {
     rect: Rect,
@@ -14,7 +17,7 @@ async fn main() {
     let mut on_ground = false;
 
     // Параметры геймплея и инкрементации
-    let mut score: i32 = 0;
+    let mut cash: i32 = 0;
     let mut base_click: i32 = 1;
     let mut cost_of_one_click: i32 = 20;
     // Параметры физики
@@ -29,7 +32,7 @@ async fn main() {
             color: BROWN,
         },
         Blocks {
-            rect: Rect::new(600.0, 400.0, 400.0, 200.0),
+            rect: Rect::new(600.0, 400.0, 600.0, 200.0),
             color: BROWN,
         },
         Blocks {
@@ -64,7 +67,7 @@ async fn main() {
         let mouse_pos: Vec2 = mouse_position().into();
         let it_on = buttons[0].contains(mouse_pos);
         if it_on && is_mouse_button_pressed(MouseButton::Left) {
-            score += base_click;
+            cash += base_click;
         }
         let old_pos = pos;
         velocity.y += gravity * dt; // гравитация
@@ -97,15 +100,34 @@ async fn main() {
                 }
             }
         }
-        if hit_upgrade && score >= cost_of_one_click {
+        if hit_upgrade && cash >= cost_of_one_click {
             base_click += 1;
-            score -= cost_of_one_click;
+            cash -= cost_of_one_click;
             cost_of_one_click = cost_of_one_click * 3 / 2;
         }
         // Отрисовка
         clear_background(Color::from_rgba(25, 25, 30, 255)); // r g b and trancperensy
+
+        // ===== КАМЕРА =====
+        // Идея: камера — это "окно", через которое мы смотрим на мир.
+        // from_display_rect(rect) говорит: "вот этот прямоугольник МИРА
+        // растяни на весь экран".
+        // Мы каждый кадр строим этот прямоугольник так, чтобы его ЦЕНТР
+        // совпадал с позицией персонажа:
+        //   левый край   = pos.x - половина ширины экрана
+        //   верхний край = pos.y - половина высоты экрана
+        // Размер окна = размеру экрана, т.е. масштаб 1:1, без зума.
+        let camera = Camera2D::from_display_rect(Rect::new(
+            pos.x - screen_width() / 2.0,
+            pos.y + screen_height() / 2.0,
+            screen_width(),
+            -screen_height(),
+        ));
+        set_camera(&camera); // ВКЛЮЧИЛИ камеру: всё, что рисуем дальше,
+        // сдвигается/масштабируется относительно неё.
+
+        // --- МИР (рисуется ПОД камерой, т.е. двигается вместе с ней) ---
         draw_rectangle(pos.x, pos.y, size.x, size.y, SKYBLUE);
-        //draw_rectangle(platform.x, platform.y, platform.w, platform.h, BROWN);
         for block in &blocks {
             draw_rectangle(
                 block.rect.x,
@@ -115,17 +137,29 @@ async fn main() {
                 block.color,
             );
         }
-        for button in &buttons {
-            draw_rectangle(button.x, button.y, button.w, button.h, RED);
-        }
-        draw_text(&format!("Score: {score}"), 50.0, 50.0, 32.0, WHITE);
+
+        // Цена прокачки — часть МИРА: рисуем ПОД камерой, прямо над
+        // серым блоком (blocks[2]), чтобы текст "ездил" вместе с блоком.
+        // Координаты — мировые: левый край блока, на 10 пикселей выше его верха.
+        let shop = &blocks[2];
         draw_text(
             &format!("Cost: {cost_of_one_click}"),
-            650.0,
-            200.0,
+            shop.rect.x,
+            shop.rect.y - 10.0,
             20.0,
             WHITE,
         );
+
+        set_default_camera(); // ВЫКЛЮЧИЛИ камеру: вернули обычные
+        // экранные координаты (0,0 — левый верхний угол окна).
+
+        // --- UI (рисуется БЕЗ камеры, прибит к экрану) ---
+        // Если бы кнопку и текст рисовать до set_default_camera(),
+        // они бы "уезжали" вместе с миром.
+        for button in &buttons {
+            draw_rectangle(button.x, button.y, button.w, button.h, RED);
+        }
+        draw_text(&format!("Cash: {cash}"), 50.0, 50.0, 32.0, WHITE);
         next_frame().await
     }
 }
