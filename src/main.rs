@@ -20,6 +20,7 @@ async fn main() {
     let mut cash: i32 = 0;
     let mut base_click: i32 = 1;
     let mut cost_of_one_click: i32 = 20;
+    let mut sum_of_click_upgrades: i32 = 0;
     // Параметры физики
     //let mut speed = 250.0;
     let gravity = 900.0;
@@ -38,6 +39,10 @@ async fn main() {
         Blocks {
             rect: Rect::new(650.0, 250.0, 60.0, 70.0),
             color: GRAY,
+        },
+        Blocks {
+            rect: Rect::new(650.0, 310.0, 60.0, 10.0),
+            color: GREEN,
         },
     ];
 
@@ -103,6 +108,7 @@ async fn main() {
         if hit_upgrade && cash >= cost_of_one_click {
             base_click += 1;
             cash -= cost_of_one_click;
+            sum_of_click_upgrades += 1;
             cost_of_one_click = cost_of_one_click * 3 / 2;
         }
         // Отрисовка
@@ -147,6 +153,13 @@ async fn main() {
             shop.rect.x,
             shop.rect.y - 10.0,
             20.0,
+            WHITE,
+        );
+        draw_text(
+            &format!("{sum_of_click_upgrades}"),
+            shop.rect.x + 24.0,
+            shop.rect.y + 35.0,
+            32.0,
             WHITE,
         );
 
