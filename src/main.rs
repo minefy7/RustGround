@@ -21,6 +21,10 @@ async fn main() {
     let mut base_click: i32 = 1;
     let mut cost_of_one_click: i32 = 20;
     let mut sum_of_click_upgrades: i32 = 0;
+    let mut cost_autoclicker = 25;
+    let mut autoclickers = 0;
+    let mut auto_timer: f32 = 0.0;
+    let auto_delay: f32 = 1.0;
     // Параметры физики
     //let mut speed = 250.0;
     let gravity = 900.0;
@@ -41,7 +45,15 @@ async fn main() {
             color: GRAY,
         },
         Blocks {
-            rect: Rect::new(650.0, 310.0, 60.0, 10.0),
+            rect: Rect::new(650.2, 310.0, 59.5, 10.0),
+            color: GREEN,
+        },
+        Blocks {
+            rect: Rect::new(750.0, 250.0, 60.0, 70.0),
+            color: GRAY,
+        },
+        Blocks {
+            rect: Rect::new(750.2, 310.0, 59.5, 10.0),
             color: GREEN,
         },
     ];
@@ -80,9 +92,9 @@ async fn main() {
         // Персонаж
         let player_rect = Rect::new(pos.x, pos.y, size.x, size.y);
         on_ground = false;
-
         // Коллизия
-        let mut hit_upgrade = false;
+        let mut hit_upgrade_click = false;
+        let mut hit_upgrade_autoclick = false;
         for (i, block) in blocks.iter().enumerate() {
             if player_rect.overlaps(&block.rect) {
                 if old_pos.y + size.y <= block.rect.y && velocity.y >= 0.0 {
@@ -94,7 +106,10 @@ async fn main() {
                     pos.y = block.rect.y + block.rect.h;
                     velocity.y = 0.0;
                     if i == 2 {
-                        hit_upgrade = true;
+                        hit_upgrade_click = true;
+                    }
+                    if i == 4 {
+                        hit_upgrade_autoclick = true;
                     }
                 } else {
                     if old_pos.x + size.x / 2.0 >= block.rect.x + block.rect.w / 2.0 {
@@ -105,11 +120,23 @@ async fn main() {
                 }
             }
         }
-        if hit_upgrade && cash >= cost_of_one_click {
+        if hit_upgrade_click && cash >= cost_of_one_click {
             base_click += 1;
             cash -= cost_of_one_click;
             sum_of_click_upgrades += 1;
             cost_of_one_click = cost_of_one_click * 3 / 2;
+        }
+        if hit_upgrade_autoclick && cash >= cost_autoclicker {
+            cash -= cost_autoclicker;
+            autoclickers += 1;
+            cost_autoclicker = cost_autoclicker * 4 / 2;
+        }
+        if autoclickers >= 1 {
+            auto_timer += get_frame_time();
+            if auto_timer >= auto_delay {
+                cash += autoclickers;
+                auto_timer -= auto_delay;
+            }
         }
         // Отрисовка
         clear_background(Color::from_rgba(25, 25, 30, 255)); // r g b and trancperensy
@@ -147,22 +174,50 @@ async fn main() {
         // Цена прокачки — часть МИРА: рисуем ПОД камерой, прямо над
         // серым блоком (blocks[2]), чтобы текст "ездил" вместе с блоком.
         // Координаты — мировые: левый край блока, на 10 пикселей выше его верха.
-        let shop = &blocks[2];
+        let click = &blocks[2];
         draw_text(
             &format!("Cost: {cost_of_one_click}"),
-            shop.rect.x,
-            shop.rect.y - 10.0,
+            click.rect.x,
+            click.rect.y - 10.0,
             20.0,
             WHITE,
         );
         draw_text(
-            &format!("{sum_of_click_upgrades}"),
-            shop.rect.x + 24.0,
-            shop.rect.y + 35.0,
-            32.0,
+            &format!("Clicks"),
+            click.rect.x + 10.0,
+            click.rect.y + 25.0,
+            16.0,
             WHITE,
         );
-
+        draw_text(
+            &format!("{sum_of_click_upgrades}"),
+            click.rect.x + 24.0,
+            click.rect.y + 35.0,
+            16.0,
+            WHITE,
+        );
+        let autoclick = &blocks[4];
+        draw_text(
+            &format!("Cost: {cost_autoclicker}"),
+            autoclick.rect.x,
+            autoclick.rect.y - 10.0,
+            20.0,
+            WHITE,
+        );
+        draw_text(
+            &format!("AutoClickers"),
+            autoclick.rect.x + 10.0,
+            autoclick.rect.y + 25.0,
+            16.0,
+            WHITE,
+        );
+        draw_text(
+            &format!("{autoclickers}"),
+            autoclick.rect.x + 24.0,
+            autoclick.rect.y + 35.0,
+            16.0,
+            WHITE,
+        );
         set_default_camera(); // ВЫКЛЮЧИЛИ камеру: вернули обычные
         // экранные координаты (0,0 — левый верхний угол окна).
 
