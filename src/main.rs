@@ -6,6 +6,13 @@ use macroquad::camera::{Camera2D, set_camera, set_default_camera};
 struct Blocks {
     rect: Rect,
     color: Color,
+    kind: BlockKind,
+}
+
+enum BlockKind {
+    Solid,
+    ShopClick,
+    ShopAuto,
 }
 
 #[macroquad::main("RustGround")]
@@ -35,34 +42,42 @@ async fn main() {
         Blocks {
             rect: Rect::new(-500.0, 400.0, 6000.0, 600.0),
             color: DARKGRAY,
+            kind: BlockKind::Solid,
         },
         Blocks {
             rect: Rect::new(650.0, 250.0, 60.0, 70.0),
             color: GRAY,
+            kind: BlockKind::ShopClick,
         },
         Blocks {
             rect: Rect::new(650.2, 310.0, 59.5, 10.0),
             color: GREEN,
+            kind: BlockKind::Solid,
         },
         Blocks {
             rect: Rect::new(750.0, 250.0, 60.0, 70.0),
             color: GRAY,
+            kind: BlockKind::ShopAuto,
         },
         Blocks {
             rect: Rect::new(750.2, 310.0, 59.5, 10.0),
             color: GREEN,
+            kind: BlockKind::Solid,
         },
         Blocks {
             rect: Rect::new(-1000.0, -200.0, 900.0, 2000.0),
             color: DARKGRAY,
+            kind: BlockKind::Solid,
         },
         Blocks {
             rect: Rect::new(1200.0, -200.0, 900.0, 2000.0),
             color: DARKGRAY,
+            kind: BlockKind::Solid,
         },
         Blocks {
             rect: Rect::new(-1000.0, -650.0, 6000.0, 600.0),
             color: DARKGRAY,
+            kind: BlockKind::Solid,
         },
     ];
 
@@ -98,7 +113,7 @@ async fn main() {
         // Коллизия
         let mut hit_upgrade_click = false;
         let mut hit_upgrade_autoclick = false;
-        for (i, block) in blocks.iter().enumerate() {
+        for block in &blocks {
             if player_rect.overlaps(&block.rect) {
                 if old_pos.y + size.y <= block.rect.y && velocity.y >= 0.0 {
                     pos.y = block.rect.y - size.y;
@@ -108,11 +123,10 @@ async fn main() {
                 } else if old_pos.y >= block.rect.y + block.rect.h {
                     pos.y = block.rect.y + block.rect.h;
                     velocity.y = 0.0;
-                    if i == 1 {
-                        hit_upgrade_click = true;
-                    }
-                    if i == 3 {
-                        hit_upgrade_autoclick = true;
+                    match block.kind {
+                        BlockKind::ShopClick => hit_upgrade_click = true,
+                        BlockKind::ShopAuto => hit_upgrade_autoclick = true,
+                        BlockKind::Solid => {}
                     }
                 } else {
                     if old_pos.x + size.x / 2.0 >= block.rect.x + block.rect.w / 2.0 {
@@ -178,53 +192,62 @@ async fn main() {
         if it_on && is_mouse_button_pressed(MouseButton::Left) {
             cash += base_click;
         }
-        // Цена прокачки — часть МИРА: рисуем ПОД камерой, прямо над
-        // серым блоком (blocks[2]), чтобы текст "ездил" вместе с блоком.
-        // Координаты — мировые: левый край блока, на 10 пикселей выше его верха.
-        let click = &blocks[2];
-        draw_text(
-            &format!("Cost: {cost_of_one_click}"),
-            click.rect.x,
-            click.rect.y - 70.0,
-            20.0,
-            WHITE,
-        );
-        draw_text(
-            &format!("Clicks"),
-            click.rect.x + 10.0,
-            click.rect.y - 90.0,
-            16.0,
-            WHITE,
-        );
-        draw_text(
-            &format!("{sum_of_click_upgrades}"),
-            click.rect.x + 24.0,
-            click.rect.y - 80.0,
-            16.0,
-            WHITE,
-        );
-        let autoclick = &blocks[4];
-        draw_text(
-            &format!("Cost: {cost_autoclicker}"),
-            autoclick.rect.x,
-            autoclick.rect.y - 70.0,
-            20.0,
-            WHITE,
-        );
-        draw_text(
-            &format!("AutoClickers"),
-            autoclick.rect.x + 5.0,
-            autoclick.rect.y - 90.0,
-            12.0,
-            WHITE,
-        );
-        draw_text(
-            &format!("{autoclickers}"),
-            autoclick.rect.x + 24.0,
-            autoclick.rect.y - 80.0,
-            16.0,
-            WHITE,
-        );
+        // Подписи магазинов: ищем блоки по виду (BlockKind), а не по индексу —
+        // порядок в vec! больше ничего не ломает. find возвращает Option,
+        // поэтому рисуем только если блок нашёлся (if let Some).
+        // Координаты — мировые, текст прибит к блоку магазина.
+        if let Some(shop) = blocks
+            .iter()
+            .find(|b| matches!(b.kind, BlockKind::ShopClick))
+        {
+            draw_text(
+                "Clicks",
+                shop.rect.x + 10.0,
+                shop.rect.y - 30.0,
+                16.0,
+                WHITE,
+            );
+            draw_text(
+                &format!("{sum_of_click_upgrades}"),
+                shop.rect.x + 24.0,
+                shop.rect.y - 20.0,
+                16.0,
+                WHITE,
+            );
+            draw_text(
+                &format!("Cost: {cost_of_one_click}"),
+                shop.rect.x,
+                shop.rect.y - 10.0,
+                20.0,
+                WHITE,
+            );
+        }
+        if let Some(shop) = blocks
+            .iter()
+            .find(|b| matches!(b.kind, BlockKind::ShopAuto))
+        {
+            draw_text(
+                "AutoClickers",
+                shop.rect.x + 5.0,
+                shop.rect.y - 30.0,
+                12.0,
+                WHITE,
+            );
+            draw_text(
+                &format!("{autoclickers}"),
+                shop.rect.x + 24.0,
+                shop.rect.y - 20.0,
+                16.0,
+                WHITE,
+            );
+            draw_text(
+                &format!("Cost: {cost_autoclicker}"),
+                shop.rect.x,
+                shop.rect.y - 10.0,
+                20.0,
+                WHITE,
+            );
+        }
         for button in &buttons {
             draw_rectangle(button.x, button.y, button.w, button.h, RED);
         }
