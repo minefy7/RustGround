@@ -33,12 +33,8 @@ async fn main() {
     // Пол (плейсхолдер), x, y, ширина, высота
     let blocks = vec![
         Blocks {
-            rect: Rect::new(0.0, 400.0, 400.0, 600.0),
-            color: BROWN,
-        },
-        Blocks {
-            rect: Rect::new(600.0, 400.0, 800.0, 600.0),
-            color: BROWN,
+            rect: Rect::new(-500.0, 400.0, 6000.0, 600.0),
+            color: DARKGRAY,
         },
         Blocks {
             rect: Rect::new(650.0, 250.0, 60.0, 70.0),
@@ -55,6 +51,18 @@ async fn main() {
         Blocks {
             rect: Rect::new(750.2, 310.0, 59.5, 10.0),
             color: GREEN,
+        },
+        Blocks {
+            rect: Rect::new(-1000.0, -200.0, 900.0, 2000.0),
+            color: DARKGRAY,
+        },
+        Blocks {
+            rect: Rect::new(1200.0, -200.0, 900.0, 2000.0),
+            color: DARKGRAY,
+        },
+        Blocks {
+            rect: Rect::new(-1000.0, -650.0, 6000.0, 600.0),
+            color: DARKGRAY,
         },
     ];
 
@@ -81,11 +89,6 @@ async fn main() {
                 d_jump_count -= 1;
             }
         }
-        let mouse_pos: Vec2 = mouse_position().into();
-        let it_on = buttons[0].contains(mouse_pos);
-        if it_on && is_mouse_button_pressed(MouseButton::Left) {
-            cash += base_click;
-        }
         let old_pos = pos;
         velocity.y += gravity * dt; // гравитация
         pos += velocity * dt; // движение
@@ -105,10 +108,10 @@ async fn main() {
                 } else if old_pos.y >= block.rect.y + block.rect.h {
                     pos.y = block.rect.y + block.rect.h;
                     velocity.y = 0.0;
-                    if i == 2 {
+                    if i == 1 {
                         hit_upgrade_click = true;
                     }
-                    if i == 4 {
+                    if i == 3 {
                         hit_upgrade_autoclick = true;
                     }
                 } else {
@@ -150,12 +153,11 @@ async fn main() {
         //   левый край   = pos.x - половина ширины экрана
         //   верхний край = pos.y - половина высоты экрана
         // Размер окна = размеру экрана, т.е. масштаб 1:1, без зума.
-        let camera = Camera2D::from_display_rect(Rect::new(
-            pos.x - screen_width() / 4.0,
-            pos.y + screen_height() / 4.0,
-            screen_width(),
-            -screen_height(),
-        ));
+        let zoom = 2.0;
+        let w = screen_width() / zoom;
+        let h = screen_height() / zoom;
+        let camera =
+            Camera2D::from_display_rect(Rect::new(pos.x - w / 2.0, pos.y + h / 4.0, w, -h));
         set_camera(&camera); // ВКЛЮЧИЛИ камеру: всё, что рисуем дальше,
         // сдвигается/масштабируется относительно неё.
 
@@ -170,7 +172,12 @@ async fn main() {
                 block.color,
             );
         }
-
+        let mouse_pos: Vec2 = mouse_position().into();
+        let mouse_world = camera.screen_to_world(mouse_pos);
+        let it_on = buttons[0].contains(mouse_world);
+        if it_on && is_mouse_button_pressed(MouseButton::Left) {
+            cash += base_click;
+        }
         // Цена прокачки — часть МИРА: рисуем ПОД камерой, прямо над
         // серым блоком (blocks[2]), чтобы текст "ездил" вместе с блоком.
         // Координаты — мировые: левый край блока, на 10 пикселей выше его верха.
@@ -178,21 +185,21 @@ async fn main() {
         draw_text(
             &format!("Cost: {cost_of_one_click}"),
             click.rect.x,
-            click.rect.y - 10.0,
+            click.rect.y - 70.0,
             20.0,
             WHITE,
         );
         draw_text(
             &format!("Clicks"),
             click.rect.x + 10.0,
-            click.rect.y + 25.0,
+            click.rect.y - 90.0,
             16.0,
             WHITE,
         );
         draw_text(
             &format!("{sum_of_click_upgrades}"),
             click.rect.x + 24.0,
-            click.rect.y + 35.0,
+            click.rect.y - 80.0,
             16.0,
             WHITE,
         );
@@ -200,34 +207,34 @@ async fn main() {
         draw_text(
             &format!("Cost: {cost_autoclicker}"),
             autoclick.rect.x,
-            autoclick.rect.y - 10.0,
+            autoclick.rect.y - 70.0,
             20.0,
             WHITE,
         );
         draw_text(
             &format!("AutoClickers"),
-            autoclick.rect.x + 10.0,
-            autoclick.rect.y + 25.0,
-            16.0,
+            autoclick.rect.x + 5.0,
+            autoclick.rect.y - 90.0,
+            12.0,
             WHITE,
         );
         draw_text(
             &format!("{autoclickers}"),
             autoclick.rect.x + 24.0,
-            autoclick.rect.y + 35.0,
+            autoclick.rect.y - 80.0,
             16.0,
             WHITE,
         );
+        for button in &buttons {
+            draw_rectangle(button.x, button.y, button.w, button.h, RED);
+        }
         set_default_camera(); // ВЫКЛЮЧИЛИ камеру: вернули обычные
         // экранные координаты (0,0 — левый верхний угол окна).
 
         // --- UI (рисуется БЕЗ камеры, прибит к экрану) ---
         // Если бы кнопку и текст рисовать до set_default_camera(),
         // они бы "уезжали" вместе с миром.
-        for button in &buttons {
-            draw_rectangle(button.x, button.y, button.w, button.h, RED);
-        }
-        draw_text(&format!("Cash: {cash}"), 50.0, 50.0, 32.0, WHITE);
+        draw_text(&format!("Cash: {cash}"), 900.0, 50.0, 32.0, WHITE);
         next_frame().await
     }
 }
